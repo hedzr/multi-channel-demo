@@ -10,14 +10,71 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+        manifestPlaceholders = [
+                JPUSH_PKGNAME : applicationId,
+                JPUSH_APPKEY : "81d542c7eb5c3d6766ad8c15", //JPush上注册的包名对应的appkey.
+                JPUSH_CHANNEL : "developer-default", //暂时填写默认值即可.
+        ]
+    }
+
+    signingConfigs {
+        sign
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.sign
+            applicationVariants.all { variant ->
+                variant.outputs.each { output ->
+                    def outPutApkName = "${project.name}-${variant.flavorName}-v${defaultConfig.versionName}"
+                    if (output.outputFile != null && output.outputFile.name.endsWith('.apk')
+                            && 'release'.equals(variant.buildType.name)) {
+                        outPutApkName = "${outPutApkName}-release.apk"
+                    }
+                    if (output.outputFile != null && output.outputFile.name.endsWith('.apk')
+                            && 'debug'.equals(variant.buildType.name)) {
+                        outPutApkName = "${outPutApkName}-debug.apk"
+                    }
+                    output.outputFile = new File(output.outputFile.parent, outPutApkName)
+                }
+            }
         }
     }
+
+    productFlavors {
+        defaults {
+            manifestPlaceholders = [SUWEI_CHANNEL_VALUE: "defaults"]
+        }
+        yinyongbao {
+            manifestPlaceholders = [SUWEI_CHANNEL_VALUE: "yingyongbao"]
+        }
+        qh360 {
+            manifestPlaceholders = [SUWEI_CHANNEL_VALUE: "qh360"]
+        }
+    }
+
+
 }
+
+
+def ksFile = rootProject.file('local.properties')
+def props = new Properties();
+if (ksFile.canRead()) {
+    props.load(new FileInputStream(ksFile))
+    if (props != null) {
+        android.signingConfigs.sign.storeFile file(props['KEYSTORE_FILE'])
+        android.signingConfigs.sign.storePassword props['KEYSTORE_PASSWORD']
+        android.signingConfigs.sign.keyAlias props['KEYSTORE_ALIAS']
+        android.signingConfigs.sign.keyPassword props['KEYSTORE_ALIAS_PASSWORD']
+    } else {
+        println 'some entries in \'local.properties\' not found!'
+    }
+} else {
+    println '\'local.properties\' not found!'
+}
+
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
