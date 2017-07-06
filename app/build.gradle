@@ -11,16 +11,40 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
+        ndk {
+            //选择要添加的对应cpu类型的.so库。
+            abiFilters 'armeabi', 'armeabi-v7a', 'armeabi-v8a','x86', 'x86_64', 'mips', 'mips64'
+        }
+
+        // dex突破65535的限制
+        multiDexEnabled true
+
         manifestPlaceholders = [
                 JPUSH_PKGNAME : applicationId,
                 JPUSH_APPKEY : "81d542c7eb5c3d6766ad8c15", //JPush上注册的包名对应的appkey.
                 JPUSH_CHANNEL : "developer-default", //暂时填写默认值即可.
+                UMENG_CHANNEL_VALUE: "umeng",
+                APP_CHANNEL_VALUE: "defaults",
         ]
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
     }
 
     signingConfigs {
         sign
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -43,18 +67,27 @@ android {
         }
     }
 
+    // Build all channels:
+    //   gradle assembleRelease
+    // Build a single channel:
+    //   gradle assembleWandoujiaRelease
+    //   gradle assembleWandoujia
     productFlavors {
-        defaults {
-            manifestPlaceholders = [SUWEI_CHANNEL_VALUE: "defaults"]
-        }
-        yinyongbao {
-            manifestPlaceholders = [SUWEI_CHANNEL_VALUE: "yingyongbao"]
-        }
-        qh360 {
-            manifestPlaceholders = [SUWEI_CHANNEL_VALUE: "qh360"]
-        }
+        defaults {}
+        yinyongbao {}
+        xiaomi {}
+        qh360 {}
+        baidu {}
+        wandoujia {}
     }
 
+    productFlavors.all {
+        flavor -> flavor.manifestPlaceholders = [
+                UMENG_CHANNEL_VALUE: name,
+                JPUSH_CHANNEL_VALUE: name,
+                APP_CHANNEL_VALUE: name,
+        ]
+    }
 
 }
 
@@ -75,6 +108,10 @@ if (ksFile.canRead()) {
     println '\'local.properties\' not found!'
 }
 
+def releaseTime() {
+    return new Date().format("yyyy-MM-dd", TimeZone.getTimeZone("UTC"))
+}
+
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
@@ -85,4 +122,9 @@ dependencies {
     compile 'com.android.support:design:25.3.1'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     testCompile 'junit:junit:4.12'
+
+    compile 'cn.jiguang.sdk:jpush:3.0.5'
+    compile 'cn.jiguang.sdk:jcore:1.1.2'
+    compile 'com.umeng.analytics:analytics:latest.integration'
+
 }
